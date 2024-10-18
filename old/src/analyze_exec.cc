@@ -13,7 +13,7 @@ using std::uint64_t;
 using std::vector;
 static_assert(std::numeric_limits<size_t>::digits >= 64, "you need a 64-bit computer");
 
-uint64_t maxn = 1<<28; // 1GB of RAM
+uint64_t maxn = (1<<28) - 1; // 1GB of RAM
 uint64_t take_iters = 0;
 uint64_t break_iters = 0;
 
@@ -220,7 +220,7 @@ void analyze_game() {
       print_stats();
       //if(check_period()) break;
     }
-    if(nimbers.size() >= maxn) break;
+    if(nimbers.size() > maxn) break;
     compute_nimber();
   }
   std::cout << "iterations:  take " << take_iters << "  break " << break_iters << std::endl;
