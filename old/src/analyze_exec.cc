@@ -1,24 +1,28 @@
 #include "bit_util.h"
 #include "game.h"
 #include "hadamard.h"
+#include <cstdint>
 #include <iostream>
+#include <ostream>
 #include <stdexcept>
 #include <limits>
 #include <vector>
-using std::cerr;
 using std::cout;
 using std::uint32_t;
 using std::uint64_t;
 using std::vector;
 static_assert(std::numeric_limits<size_t>::digits >= 64, "you need a 64-bit computer");
 
-constexpr uint64_t maxn = 1<<28; // 1GB of RAM
+uint64_t maxn = 1<<28; // 1GB of RAM
+uint64_t take_iters = 0;
+uint64_t break_iters = 0;
 
 Game game;
 
 void process_args(int argc, char **argv) {
-  if (argc != 2) throw std::runtime_error("specify a game");
+  if (argc != 2 && argc != 3) throw std::runtime_error("specify a game and, optionally, maxn");
   game = Game(argv[1]);
+  if (argc == 3) maxn = atoll(argv[2]);
 }
 
 uint32_t rare_position_bit;
@@ -75,6 +79,7 @@ void print_stats() {
     << " rare_mask=" << std::hex << rare_mask << std::dec << (rare_has_position ? "pos" : "")
     << " num_rare=" << rare.size()
     << " last_rare=" << largest_rare_idx
+    << " break_iters=" << break_iters
     << std::endl;
 }
 
@@ -134,6 +139,7 @@ void compute_nimber() {
       rare_remaining[nimbers[n-m]] = false;
       common_remaining[nimbers[n-m]] = false;
     }
+    take_iters++;
   }
 
   // Process split moves rare+something.
@@ -149,6 +155,7 @@ void compute_nimber() {
         uint32_t v = nimbers[r] ^ nimbers[r2];
         rare_remaining[v] = false;
         common_remaining[v] = false;
+        break_iters++;
       }
     }
   }
@@ -178,6 +185,7 @@ void compute_nimber() {
           --num_rare_remaining;
         }
       }
+      break_iters++;
     }
   }
 
@@ -210,11 +218,12 @@ void analyze_game() {
   for(;;) {
     if (is_power_of_2(nimbers.size())) {
       print_stats();
-      if(check_period()) break;
+      //if(check_period()) break;
     }
     if(nimbers.size() >= maxn) break;
     compute_nimber();
   }
+  std::cout << "iterations:  take " << take_iters << "  break " << break_iters << std::endl;
 }
 
 int main(int argc, char **argv) {
