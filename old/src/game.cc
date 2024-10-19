@@ -61,7 +61,7 @@ string Game::name() const {
     }
     while(res.size() > 1 && res.back() == '0') res.pop_back();
     if (res.size() > 1) {
-      res = (res[0]=='0' ? string() : res.substr(0, 1)) + "." + res.substr(1);
+      res = (/*res[0]=='0' ? string() :*/ res.substr(0, 1)) + "." + res.substr(1);
     }
     return res;
   }

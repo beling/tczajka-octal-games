@@ -1,3 +1,5 @@
+#define CSV // game, positions, method, take_iter, break_iter, rc_effort, rc_rebuilds
+
 #include "bit_util.h"
 #include "game.h"
 #include "hadamard.h"
@@ -7,7 +9,6 @@
 #include <stdexcept>
 #include <limits>
 #include <vector>
-using std::cout;
 using std::uint32_t;
 using std::uint64_t;
 using std::vector;
@@ -16,6 +17,8 @@ static_assert(std::numeric_limits<size_t>::digits >= 64, "you need a 64-bit comp
 uint64_t maxn = (1<<28)+1; // 1GB of RAM
 uint64_t take_iters = 0;
 uint64_t break_iters = 0;
+uint64_t rc_rebuilds = 0;
+uint64_t rc_effort = 0;
 
 Game game;
 
@@ -41,7 +44,7 @@ uint64_t largest_nimber_idx = 0;
 vector<uint64_t> nimber_count(2, 0);  // including position bit
 
 void recompute_rare() {
-  uint64_t n = nimbers.size();
+  const uint64_t n = nimbers.size();
   vector<uint64_t> hadamard = nimber_count;
   hadamard_transform(hadamard.data(), hadamard.size());
   uint32_t best = 0;
@@ -69,18 +72,22 @@ void recompute_rare() {
     rare_nimbers[i] = !parity(i & rare_mask);
     common_nimbers[i] = !rare_nimbers[i];
   }
+  rc_rebuilds += 1;
+  rc_effort += n;
 }
 
 void print_stats() {
+  #ifndef CSV
   const uint64_t n = nimbers.size();
   const uint64_t largest_rare_idx = rare.empty() ? 0 : rare.back();
-  cout << "n=2^" << lowest_bit(n)
+  std::cout << "n=2^" << lowest_bit(n)
     << " largest G[" << largest_nimber_idx << "]=" << nimbers[largest_nimber_idx]
     << " rare_mask=" << std::hex << rare_mask << std::dec << (rare_has_position ? "pos" : "")
     << " num_rare=" << rare.size()
     << " last_rare=" << largest_rare_idx
     << " break_iters=" << break_iters
     << std::endl;
+  #endif
 }
 
 bool check_period() {
@@ -109,7 +116,7 @@ bool check_period() {
      *    n >= max(2*start + 2*p + t - 1, p + t + 1)
      */
     if (game.equal_split_allowed() && n >= std::max(2*std::max(start,uint64_t(1)) + 2*p + t - 1, p + t + 1)) {
-      cout << "Found period start=" << start << " period=" << p << "\n";
+      std::cout << "Found period start=" << start << " period=" << p << "\n";
       return true;
     }
   }
@@ -223,7 +230,11 @@ void analyze_game() {
     if(nimbers.size()+1 == maxn) break;
     compute_nimber();
   }
+  #ifdef CSV
+  std::cout << game.name() << ", " << maxn << ", mask, " << take_iters << ", " << break_iters << ", " << rc_effort << ", " << rc_rebuilds << std::endl;
+  #else
   std::cout << "iterations:  take " << take_iters << "  break " << break_iters << std::endl;
+  #endif
 }
 
 int main(int argc, char **argv) {
